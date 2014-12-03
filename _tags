@@ -1,0 +1,11 @@
+true: warn_error_A, strict_sequence
+<*>: package(batteries)
+<geo.*>: package(proj4)
+<laplacian.*> : package(gsl)
+<formats.*> : package(xml-light), package(calendar)
+<predictive.*> : package(gsl), package(xml-light), package(calendar), package(parmap)
+<query.*> : package(postgresql), thread
+<test_query.*> : package(postgresql), thread, package(proj4)
+<grid.*> : package(parmap)
+<metric.*> : package(ocamlgraph)
+<evaluation.*> : package(ocamlgraph), package(calendar), package(xml-light), package(postgresql), thread, package(parmap), package(gsl), package(proj4)

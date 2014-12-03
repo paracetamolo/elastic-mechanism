@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Gpx Viewer</title>
+    
+    <meta charset="UTF-8">
+    <meta name="author" content="Marco Stronati">
+
+    <!-- <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.css" /> -->
+    <link rel="stylesheet" href="js/leaflet.css" />
+
+    <style>
+      html, body, #map {margin: 0; width: 100%; height: 100%}
+      input {position: absolute; top: 0; left: 40%; z-index: 10; background: white}
+    </style>
+  </head>
+
+  <body>
+    <input type="file" id="files" name="files[]" multiple />
+    <div id="map"></div>    
+  </body>
+
+  <!-- <script src="http://cdn.leafletjs.com/leaflet-0.5.1/leaflet.js"></script> -->
+  <script type="text/javascript" src="js/leaflet.js"></script>
+  <script type="text/javascript" src="js/main.js"></script>
+</html>
