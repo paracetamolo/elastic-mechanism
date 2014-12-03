@@ -76,3 +76,6 @@ With the other files created it is possible to generate the graphs:
 ```
 
 Additionally the geojson files with extension `.json` can be inspected with the leaflet based viewer found in `viewer/index.html`.
+
+# Documentation
+Some OCaml documentation can be built with `make doc` and found in `elastic.docdir/index.html`.
