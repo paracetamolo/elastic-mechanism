@@ -112,6 +112,8 @@ module Elastic : sig
   val iter: t -> (Node.t -> unit) -> unit
   val iter_box: t -> Grid.box_in -> (Node.t -> unit) -> unit
   val to_files: t -> string -> unit
+  (** Output a file with a symmetric square matrix containing the distance of each pair of nodes. *)
+  val to_matrix: t -> string -> unit
   val of_files: string -> t
   val stat: t -> Util.values * Util.values
   val stat_box: t -> Grid.box_in -> Util.values * Util.values
@@ -247,6 +249,26 @@ end
     Grid.iter m.grid dump_edges;
     close_out oc
 
+  let to_matrix m file = 
+    let oc = open_out file in
+
+    Grid.iter m.grid 
+              (fun n1 ->
+
+               (* Printf.fprintf oc "%05i: %!" (Node.id n1); (\* TODO to remove *\) *)
+               let threshold = Conf.Algo.max_distance *. 2. in (* TODO incrase this 2 *)
+               let dists = ball m (Node.id n1) threshold in
+               Grid.iter m.grid (fun n2 -> 
+                                 let id2 = Node.id n2 in
+                                 let d =
+                                   try Hashtbl.find dists id2 with 
+                                     Not_found -> infinity
+                                 in
+                                 Printf.fprintf oc "%+e " d;
+                                );
+               Printf.fprintf oc "\n");
+    close_out oc
+    
 
 
   let to_files m name =
