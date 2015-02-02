@@ -11,6 +11,15 @@ let rad_of_deg ang = ang *. pi /. 180.
 let deg_of_rad ang = ang *. 180. /. pi
 
 
+let pj_latlon = Proj4.init_plus "+proj=latlong +ellps=WGS84"
+
+let pj_merc = Proj4.init_plus "+proj=utm +zone=50N" (* for beijing *)
+let srid_merc = 32650              (* beijing *)
+
+(* let pj_merc_init_string = "+proj=utm +zone=31N" (\* for paris *\) *)
+(* let srid_merc = 32631              (\* for paris: WGS 84 / UTM zone 31N : projection in meters with distance in meters *\) *)
+
+
 module rec Wgs : sig
     type t
     val srid : int
@@ -27,7 +36,7 @@ struct
 
   type t = float * float
 
-  let srid = 4326
+  let srid = 4326               (* WGS84 *)
 
   (* check bound of lat/lon expressed in degrees *)
   let valid_lon lon = if -180. < lon && lon <= 180. then true else false
@@ -36,11 +45,8 @@ struct
   let make lat lon =
     if valid_lat lat && valid_lon lon
     then (lat,lon)
-    else raise (Invalid_argument "Invalid latitude or longitude")
+    else raise (Invalid_argument (Printf.sprintf "Invalid latitude or longitude (%f,%f)" lat lon))
 
-
-  let pj_merc = Proj4.init_plus "+proj=utm +zone=31N"
-  let pj_latlon = Proj4.init_plus "+proj=latlong +ellps=WGS84"
 
   let of_xy (x,y) =
     let lon_rad,lat_rad = Proj4.transform_one_tuple pj_merc pj_latlon x y in
@@ -120,19 +126,15 @@ and Utm : sig
   = struct
   type t = float * float
 
-  let srid = 32631
+  let srid = srid_merc
 
   let make x y = (x,y)
-
-  let pj_merc = Proj4.init_plus "+proj=utm +zone=31N"
-  let pj_latlon = Proj4.init_plus "+proj=latlong +ellps=WGS84"
 
   let of_latlon (lat,lon) =
     let lat_rad = rad_of_deg lat in
     let lon_rad = rad_of_deg lon in
     let (x,y) = Proj4.transform_one_tuple pj_latlon pj_merc lon_rad lat_rad in
     make x y
-
 
 
   let tuple c = c
@@ -209,19 +211,20 @@ let latlon_of_xy (x,y) = (lat_of_y y, lon_of_x x);;
 end
     
 
-let beijin1 = Wgs.make 39.9066926 116.3900475 (* distance 100 m *)
-let beijin2 = Wgs.make 39.906721 116.3912176
+let beijing  = Wgs.make 39.9059093 116.3913489
+let beijing_uni = Wgs.make 39.982501 116.326649
+let beijing3 = Wgs.make 39.9059093 116.391349
+let beijing1 = Wgs.make 39.9066926 116.3900475 (* distance 100 m *)
+let beijing2 = Wgs.make 39.906721 116.3912176
 
 let paris1 = Wgs.make 48.8443899 2.3336967   (* distance 100 m *)
 let paris2 = Wgs.make 48.8443511 2.33506
 
-let paris    = Wgs.make 48.8567  2.3487
-let paris_nw = Wgs.make 48.898807  2.258034
-let paris_outer_nw = Wgs.make 48.943291  2.089334
+let paris    = Wgs.make 48.8567 2.3487
+let paris_nw = Wgs.make 48.898807 2.258034
+let paris_outer_nw = Wgs.make 48.943291 2.089334
 let newyork  = Wgs.make 40.7305991  (-73.9865812)
 let rio      = Wgs.make (-22.9112163)  (-43.2093781)
-let beijing  = Wgs.make 39.9059093  116.3913489
-let beijing3 = Wgs.make 39.9059093  116.391349
 
 
 let defense  = Wgs.make 48.8944 2.2470

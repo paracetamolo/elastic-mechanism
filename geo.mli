@@ -46,3 +46,4 @@ val halles   : Wgs.t
 val boulogne : Wgs.t
 
 val rio : Wgs.t
+val beijing_uni : Wgs.t

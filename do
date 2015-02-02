@@ -3,7 +3,7 @@
 NAME=evaluation
 
 
-run () {
+function run {
     OCAMLRUNPARAM='b' /usr/bin/time -v -o time.temp ./$NAME.native "$1" 1>"$1/note"
     cat time.temp >> "$1/note"
     rm time.temp
@@ -23,7 +23,7 @@ function clean {
 function deploy {
     AWS=
     VERSION=$(git log -1 --pretty=%h)
-    rsync -PaL *ml do _tags schema.py *.gnuplot $AWS:src-$VERSION
+    rsync -PaL *.ml Makefile do _tags schema.py *.gnuplot $AWS:src-$VERSION
 }
 
 function graphs {
