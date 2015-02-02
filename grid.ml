@@ -117,6 +117,7 @@ module Grid : sig
   type t
   type box_in = int * int
   type pos = int * int
+  val copy : t -> t
   val length: t -> int
   val radius: t -> float
   val iter : t -> (Node.t -> unit) -> unit
@@ -144,7 +145,7 @@ module Grid : sig
   val normalize: t -> t
   val pp_of_ball: t -> int -> float -> float
   val to_numbers_grid: t -> unit
-  val of_warped: string -> t
+  (* val of_warped: string -> t *)
 end
 = struct
   type t = Node.t array array
@@ -244,23 +245,32 @@ end
   (** Find the closest location to the given cartesian coordinates 
       @raise Not_found if the location is outside the grid
    *)
+  (* TODO this could be improved with a binary search on each direction *)
   let find g coord =
     let (x,y) = Utm.tuple coord in
     let r = radius g in
+    let visited = Hashtbl.create 10 in
+    let _ = Hashtbl.add visited (0,0) true in
     let rec find_in now_pos =
-      let nx,ny = now_pos in
+      let i,j = now_pos in
       let now_x,now_y =
         try Utm.tuple (Node.coord (get g now_pos))
         with _ -> raise Not_found
       in
       let dx,dy = abs_float(x-.now_x),abs_float(y-.now_y) in
       let sx,sy = Util.sign_float (x-.now_x),Util.sign_float (y-.now_y) in
-      let next_x = if dy > r then nx - sy else nx in
-      let next_y = if dx > r then ny + sx else ny in
-      let next = (next_x,next_y) in
-      (* Printf.printf "%.0f,%.0f r %.0f  now_pos %i,%i now_xy %.0f,%.0f\n" x y r nx ny now_x now_y; *)
-      (* Printf.printf "dx %.0f dy%.0f  sx%i sy%i  next %i,%i\n" dx dy sx sy next_x next_y; *)
-      if next = now_pos then now_pos else find_in next
+      let next_i = if dy > r then i - sy else i in
+      let next_j = if dx > r then j + sx else j in
+      let next = (next_i,next_j) in
+      (* Printf.printf "%.0f,%.0f r %.0f  now_pos %i,%i now_xy %.0f,%.0f\n" x y r i j now_x now_y; *)
+      (* Printf.printf "dx %.0f dy%.0f  sx%i sy%i  next %i,%i\n" dx dy sx sy next_i next_j; *)
+      if next = now_pos 
+      then now_pos
+      else 
+        let known = try Hashtbl.find visited next with _ -> false in
+        if known 
+        then raise Not_found 
+        else let _ = Hashtbl.add visited now_pos true in find_in next
     in
     find_in (0,0)
 
@@ -349,9 +359,9 @@ end
   let split start1 step length =
     if length mod 2 <> 0 then raise (Invalid_argument "odd length");
     let half = (length / 2) in
-    let start2 = Utm.destination start1  90. (step *. (float half)) in
-    let start3 = Utm.destination start1 180. (step *. (float half)) in
-    let start4 = Utm.destination start3  90. (step *. (float half)) in
+    let start2 = Utm.destination start1   0. (step *. (float half)) in
+    let start3 = Utm.destination start1 270. (step *. (float half)) in
+    let start4 = Utm.destination start3   0. (step *. (float half)) in
     (start1,start2,start3,start4,half)
 
   let merge l =
@@ -384,8 +394,8 @@ end
         if x=0 && y=0 then () else
           let prev = if y=0 then m.(x-1).(y) else m.(x).(y-1) in
           let coo = if y=0
-            then Utm.destination (Node.coord prev) 180. step
-            else Utm.destination (Node.coord prev)  90. step
+            then Utm.destination (Node.coord prev) 270. step
+            else Utm.destination (Node.coord prev)   0. step
           in
           let id = ((x * length) + y) in
           let w = Query.get_weight id coo radius in
@@ -394,6 +404,19 @@ end
       done
     done;
     m
+
+
+  let copy g =
+    let length = length g in
+    let n0 = Node.make 0 (Node.coord g.(0).(0)) (Node.weight g.(0).(0)) in
+    let m = Array.make_matrix length length n0 in
+    iter g (fun n ->
+            let (i,j) = pos_of_id g (Node.id n) in
+            let n_copy = Node.make (Node.id n) (Node.coord n) (Node.weight n) in
+            m.(i).(j) <- n_copy
+           );
+    m
+    
 
   (*
      if length is even the center is actually slightly south est of the ideal center
@@ -405,8 +428,8 @@ between adjacent location and [length] the number of locations in a
 side of the grid.
 *)
   let make center step length =
-    let center_west = Utm.destination center 270. (step *. (float (length /2))) in
-    let nw = Utm.destination center_west 0. (step *. (float (length /2))) in
+    let center_west = Utm.destination center 180. (step *. (float (length /2))) in
+    let nw = Utm.destination center_west 90. (step *. (float (length /2))) in
     make_nw nw step length 
 
 
@@ -418,11 +441,11 @@ side of the grid.
     if length mod 2 <> 0 then raise (Invalid_argument "odd length");
 
     let half = (length / 2) in
-    let center_west = Utm.destination center 270. (step *. (float (length /2))) in
-    let start1 = Utm.destination center_west 0. (step *. (float (length /2))) in
-    let start2 = Utm.destination start1  90. (step *. (float half)) in
-    let start3 = Utm.destination start1 180. (step *. (float half)) in
-    let start4 = Utm.destination start3  90. (step *. (float half)) in
+    let center_west = Utm.destination center 180. (step *. (float (length /2))) in
+    let start1 = Utm.destination center_west 90. (step *. (float (length /2))) in
+    let start2 = Utm.destination start1   0. (step *. (float half)) in
+    let start3 = Utm.destination start1 270. (step *. (float half)) in
+    let start4 = Utm.destination start3   0. (step *. (float half)) in
     
     Parmap.set_default_ncores cores;
     let grids = Parmap.parmap
@@ -858,8 +881,9 @@ side of the grid.
     let string = ref "" in
     iter_box g box
              (fun n ->
-              let w_norm = Printf.sprintf "\"weight_n\" : %f," ((Node.weight n) /. !max_weight) in
-              string := Printf.sprintf "%s%s,\n" !string (Node.geojson_of ~properties:w_norm radius n));
+              let w_norm = if !max_weight > 0. then (Node.weight n) /. !max_weight else (Node.weight n) in
+              let w_norm_s = Printf.sprintf "\"weight_n\" : %f," w_norm in
+              string := Printf.sprintf "%s%s,\n" !string (Node.geojson_of ~properties:w_norm_s radius n));
     let nodes_string = !string in
     (* remove last ,\n *)
     let cleaned = String.sub nodes_string 0 (String.length nodes_string -2) in
@@ -912,61 +936,61 @@ side of the grid.
     done;
     close_out oc
 
-  (* load from file *)
-  let of_warped file =
-    let open Geo in
+  (* (\* load from file *\) *)
+  (* let of_warped file = *)
+  (*   let open Geo in *)
 
-    let count_lines filename =
-      let ic = Pervasives.open_in filename in
+  (*   let count_lines filename = *)
+  (*     let ic = Pervasives.open_in filename in *)
 
-      let rec loop i =
-        let continue =
-        try
-          let _ = Pervasives.input_line ic in
-          true
-        with End_of_file -> false
-        in
-        if continue
-        then loop (i+1)
-        else i
-      in
-      let res = loop 0 in
-      Pervasives.close_in ic;
-      res
-    in
+  (*     let rec loop i = *)
+  (*       let continue = *)
+  (*       try *)
+  (*         let _ = Pervasives.input_line ic in *)
+  (*         true *)
+  (*       with End_of_file -> false *)
+  (*       in *)
+  (*       if continue *)
+  (*       then loop (i+1) *)
+  (*       else i *)
+  (*     in *)
+  (*     let res = loop 0 in *)
+  (*     Pervasives.close_in ic; *)
+  (*     res *)
+  (*   in *)
 
-    let number_of_lines = float (count_lines file) in
+  (*   let number_of_lines = float (count_lines file) in *)
 
-    let ic = Pervasives.open_in file in
-    let icw = Pervasives.open_in "warped.dat" in
+  (*   let ic = Pervasives.open_in file in *)
+  (*   let icw = Pervasives.open_in "warped.dat" in *)
 
-    Printf.printf "number_of_lines %f\n" number_of_lines;
-    let size = int_of_float (sqrt number_of_lines) in
-    let dummy_node = Node.make (-1) (Utm.of_latlon Geo.paris) (-1.) in
-    let m = Array.make_matrix size size dummy_node in
+  (*   Printf.printf "number_of_lines %f\n" number_of_lines; *)
+  (*   let size = int_of_float (sqrt number_of_lines) in *)
+  (*   let dummy_node = Node.make (-1) (Utm.of_latlon Geo.paris) (-1.) in *)
+  (*   let m = Array.make_matrix size size dummy_node in *)
 
-    let rec loop () =
-      let maybe_s =
-        try
-          Some (Pervasives.input_line ic)
-        with End_of_file -> None
-      in
-      match maybe_s with
-      | Some s ->
-         let warped_pos = Scanf.sscanf (Pervasives.input_line icw) "%f %f"
-                                       (fun x y -> Utm.make x y)
-         in
-          let _ = Scanf.sscanf s "%i,%f,%f,%f"
-            (fun i lat lon weight ->
-            Printf.printf "reading node %i at pos %i\n" i (Pervasives.pos_in ic);
-              let n = Node.make i warped_pos weight in
-              set_id m i n)
-          in
-          loop ()
-      | None -> (Pervasives.close_in ic; Pervasives.close_in icw)
-    in
-    loop ();
-    m
+  (*   let rec loop () = *)
+  (*     let maybe_s = *)
+  (*       try *)
+  (*         Some (Pervasives.input_line ic) *)
+  (*       with End_of_file -> None *)
+  (*     in *)
+  (*     match maybe_s with *)
+  (*     | Some s -> *)
+  (*        let warped_pos = Scanf.sscanf (Pervasives.input_line icw) "%f %f" *)
+  (*                                      (fun x y -> Utm.make x y) *)
+  (*        in *)
+  (*         let _ = Scanf.sscanf s "%i,%f,%f,%f" *)
+  (*           (fun i lat lon weight -> *)
+  (*           Printf.printf "reading node %i at pos %i\n" i (Pervasives.pos_in ic); *)
+  (*             let n = Node.make i warped_pos weight in *)
+  (*             set_id m i n) *)
+  (*         in *)
+  (*         loop () *)
+  (*     | None -> (Pervasives.close_in ic; Pervasives.close_in icw) *)
+  (*   in *)
+  (*   loop (); *)
+  (*   m *)
 
 
 
@@ -1012,7 +1036,7 @@ side of the grid.
 
     Printf.printf "number_of_lines %f\n" number_of_lines;
     let size = int_of_float (sqrt number_of_lines) in
-    let dummy_node = Node.make (-1) (Utm.of_latlon Geo.paris) (-1.) in
+    let dummy_node = Node.make (-1) (Utm.make (-1.) (-1.)) (-1.) in
     let m = Array.make_matrix size size dummy_node in
 
     let rec loop () =
@@ -1053,24 +1077,6 @@ side of the grid.
 
 
 
-  (* let ball g id r =  *)
-  (*   let c1 = Node.coord (get_id g id) in *)
-
-  (*   clean_neighbors g id; *)
-  (*   let rec loop sum old_id =  *)
-  (*     match next_by_distance g id old_id with *)
-  (*     | None -> sum *)
-  (*     | Some new_id ->  *)
-  (*        let n2 = get_id g new_id in *)
-  (*        if Geo.distance c1 (Node.coord n2) <= r *)
-  (*        then loop (sum +. (Node.weight n2)) new_id *)
-  (*        else sum *)
-  (*   in *)
-  (*   let res = loop 0. id in *)
-  (*   clean_neighbors g id; *)
-  (*   res *)
-
-
   (* in a grid g, apply function f on all nodes within r distance from id, starting with value start.
    f: 'a -> Node.t -> 'a *)
   let fold_within g c_id r f start =
@@ -1089,40 +1095,46 @@ side of the grid.
 
   let pp_of_ball g id r = fold_within g id r (fun sum n -> sum +. (Node.weight n)) 0.
 
-  let tiles g id r = fold_within g id r (fun cnt _ -> cnt + 1) 0
 
-  let avg_w g id r =
-    let (n,sum) = fold_within g id r (fun (cnt,sum) n -> (cnt+.1., sum +. (pp_of_ball g id Conf.Grid.r_city))) (0.,0.) in
-    sum /. n
-
-  (* O(3n) *)
-  let cutoff g =
-    let w_sum = ref 0. in
-    iter g (fun n ->
-            let w = Node.weight n in
-            w_sum := w +. !w_sum;
-           );
-    let avg = !w_sum /. (float ((length g) * (length g))) in
-
-    let sd_sum = ref 0. in
-    iter g (fun n ->
-            let w = Node.weight n in
-            let sd = (w -. avg) ** 2. in
-            sd_sum := sd +. !sd_sum;
-           );
-    let sd = sqrt (!sd_sum /. (float ((length g) * (length g)))) in
-    let new_max = avg +. (sd *. 2.) in
-
-    iter g (fun n ->
-            let w = if Node.weight n >= new_max
-                    then new_max
-                    else Node.weight n
-            in
-            Node.set_weight n w
-         );
-    (g,new_max)
 
   let normalize g =
+
+    let tiles g id r = fold_within g id r (fun cnt _ -> cnt + 1) 0 in
+
+    let avg_w g id r =
+      let (n,sum) = fold_within g id r (fun (cnt,sum) n -> (cnt+.1., sum +. (pp_of_ball g id Conf.Grid.r_city))) (0.,0.) in
+      sum /. n
+    in
+
+    (* O(3n) *)
+    let cutoff g =
+      let w_sum = ref 0. in
+      iter g (fun n ->
+              let w = Node.weight n in
+              w_sum := w +. !w_sum;
+             );
+      let avg = !w_sum /. (float ((length g) * (length g))) in
+
+      let sd_sum = ref 0. in
+      iter g (fun n ->
+              let w = Node.weight n in
+              let sd = (w -. avg) ** 2. in
+              sd_sum := sd +. !sd_sum;
+             );
+      let sd = sqrt (!sd_sum /. (float ((length g) * (length g)))) in
+      let new_max = avg +. (sd *. 2.) in
+
+      iter g (fun n ->
+              let w = if Node.weight n >= new_max
+                      then new_max
+                      else Node.weight n
+              in
+              Node.set_weight n w
+             );
+      (g,new_max)
+    in
+
+
     let (g,max_w) = cutoff g in
     let tiles_country = float (tiles g (get_center g) Conf.Grid.r_country) in
     (* Printf.printf "tiles country %.0f\n%!" tiles_country; *)
