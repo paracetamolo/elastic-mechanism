@@ -142,7 +142,7 @@ module Grid : sig
   val full_box : t -> box_in
   val is_in_box : t -> box_in -> int -> bool
   val is_in_any_box : t -> box_in list -> int -> bool
-  val normalize: t -> t
+  val normalize: t -> Node.t -> t
   val pp_of_ball: t -> int -> float -> float
   val to_numbers_grid: t -> unit
   (* val of_warped: string -> t *)
@@ -1097,12 +1097,12 @@ side of the grid.
 
 
 
-  let normalize g =
+  let normalize g city_center =
 
     let tiles g id r = fold_within g id r (fun cnt _ -> cnt + 1) 0 in
 
-    let avg_w g id r =
-      let (n,sum) = fold_within g id r (fun (cnt,sum) n -> (cnt+.1., sum +. (pp_of_ball g id Conf.Grid.r_city))) (0.,0.) in
+    let avg_w g center r =
+      let (n,sum) = fold_within g (Node.id center) r (fun (cnt,sum) n -> (cnt+.1., sum +. (pp_of_ball g (Node.id n) Conf.Grid.r_city))) (0.,0.) in
       sum /. n
     in
 
@@ -1141,7 +1141,7 @@ side of the grid.
     let tiles_city = float (tiles g (get_center g) Conf.Grid.r_city) in
     (* Printf.printf "tiles city %.0f\n%!" tiles_city; *)
     let a = 1. /. tiles_country in
-    let avg = avg_w g (get_center g) (Conf.Grid.r_city *. 2.) in
+    let avg = avg_w g city_center (Conf.Grid.r_city *. 2.) in
     (* Printf.printf "avg pp %f\n%!" avg; *)
     let b = (1. -. (tiles_city /. tiles_country)) /. avg in
     (* Printf.printf "a: %f    b: %f\n%!" a b; *)
