@@ -105,6 +105,7 @@ Elastic metric
   *)
 module Elastic : sig
   type t 
+  type box_in = int * int
   include Metric with type t := t
   val make: Grid.t -> (float -> float) -> Grid.box_in list -> t
   val get_boxes: t -> Grid.box_in list
@@ -114,11 +115,14 @@ module Elastic : sig
   val to_files: t -> string -> unit
   (** Output a file with a symmetric square matrix containing the distance of each pair of nodes. *)
   val to_matrix: t -> string -> unit
+  val to_matrix_box: t -> box_in -> string -> unit
   val of_files: string -> t
   val stat: t -> Util.values * Util.values
   val stat_box: t -> Grid.box_in -> Util.values * Util.values
 end
   = struct
+
+  type box_in = int * int
 
     module E = struct
       type t = float
@@ -249,10 +253,10 @@ end
     Grid.iter m.grid dump_edges;
     close_out oc
 
-  let to_matrix m file = 
+  let to_matrix_box m box file = 
     let oc = open_out file in
 
-    Grid.iter m.grid 
+    Grid.iter_box m.grid box
               (fun n1 ->
 
                (* Printf.fprintf oc "%05i: %!" (Node.id n1); (\* TODO to remove *\) *)
@@ -269,6 +273,9 @@ end
                Printf.fprintf oc "\n");
     close_out oc
     
+  let to_matrix m file = 
+    let l = length m in
+    to_matrix_box m (0,l*l-1) file
 
 
   let to_files m name =
