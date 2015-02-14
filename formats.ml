@@ -258,3 +258,27 @@ let track_of_tdrive filename =
 let gpx_of_tdrive filename_src filename_dst =
   let track = track_of_tdrive filename_src in
   xml_to_file filename_dst (gpx_of_track track)
+
+
+
+(* gwolla *)
+let track_of_gowalla filename = 
+  let track = ref [] in
+
+  let filelines = File.lines_of filename in
+  let time = CalendarLib.Printer.Calendar.from_fstring "%FT%TZ" "1900-01-01T00:00:00Z" in
+  Enum.iteri (fun _ line ->
+    (* Printf.printf "%i %s\n" i line; *)
+
+    let pt = Scanf.sscanf line "%i, %f, %f"
+      (fun id lat lon ->
+        (* Printf.printf "lat %f lon %f date %s time %s\n" lat lon date time; *)
+        let coord = Utm.of_latlon (Wgs.make lat lon) in
+        {coord = coord; idx = id; time = time} )
+    in
+    track := pt::!track)
+    filelines;
+  !track
+
+
+
