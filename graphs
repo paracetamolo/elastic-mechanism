@@ -1,0 +1,42 @@
+#!/bin/bash
+
+if ! [ -d "$1" ]
+then echo "Usage: ./graphs directory"; exit 1;
+fi
+
+cd "$1"
+# gnuplot ../box-pp.gnuplot    
+
+lapla=$(cat laplace-avgerr.dat)
+gnuplot -e "
+title='Average Error per User';
+set ylabel 'Average Error (m)';
+set output 'avg-err.ps';
+elastic_city='elastic-avgerr-city.dat';
+elastic_country='elastic-avgerr-country.dat';
+lapla=$lapla;
+" ../avg-err.gnuplot    
+
+gnuplot -e "
+global_title='AdvError per User in Brighkite';
+set ylabel 'AdvError';
+set output 'privacy-users-brightkite.ps';
+elastic_city='elastic-paris-center-brightkite';
+elastic_country='elastic-paris-nanterre-brightkite';
+lapla_city='laplace-paris-center-brightkite';
+lapla_country='laplace-paris-nanterre-brightkite';
+" ../adv-err.gnuplot    
+
+gnuplot -e "
+global_title='AdvError per User in Gowalla';
+set ylabel 'AdvError';
+set output 'privacy-users-gowalla.ps';
+elastic_city='elastic-paris-center-gowalla';
+elastic_country='elastic-paris-nanterre-gowalla';
+lapla_city='laplace-paris-center-gowalla';
+lapla_country='laplace-paris-nanterre-gowalla';
+" ../adv-err.gnuplot    
+
+for i in $(ls *.ps); do ps2pdf -dEPSCrop $i; rm $i; mv ${i%.ps}.pdf ..; done
+
+exit 0

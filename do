@@ -26,7 +26,7 @@ function deploy {
     rsync -PaL *.ml Makefile do _tags schema.py *.gnuplot $AWS:src-$VERSION
 }
 
-function graphs {
+function graphs_old {
     gnuplot -e "set title 'Park'; set output 'park.ps'; mappa='mappa-weak.dat'; laplaw='lapla-weak-weak.dat'; laplas='lapla-strong-weak.dat';" ../png.gnuplot    
     gnuplot -e "set title 'Mall'; set output 'mall.ps'; mappa='mappa-strong.dat'; laplaw='lapla-weak-strong.dat'; laplas='lapla-strong-strong.dat';" ../png.gnuplot    
     gnuplot ../box-pp.gnuplot    
@@ -44,8 +44,7 @@ case "$1" in
         run "$2"
 	;;
     graphs)
-        cd "$2"
-        graphs
+        ./graphs "$2"
         ;;
     profile)
 	make clean
