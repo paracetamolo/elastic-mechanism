@@ -24,7 +24,7 @@ module type Exponential = sig
   val get_grid : t -> Grid.t
   val get_metric : t -> metric
   val avg_error : t -> int -> float
-  val dump_avg_err_box : t -> Grid.box_in -> string -> Util.values
+  val dump_avg_err_box : t -> Grid.box_in -> ?max_error:float -> string -> Util.values
   val dump_avg_err : t -> string -> Util.values
   val geojson_of_pdf : t -> int -> string
   end
@@ -150,12 +150,12 @@ module Make_mechanism (Metric : Metric) : (Exponential with type metric := Metri
 
 
 
-  let dump_avg_err_box mec box file =
+  let dump_avg_err_box mec box ?(max_error=(-1.)) file =
     let g = get_grid mec in
     let l = ref [] in
     let emax = ref (-1.) in
     let oc = open_out (file^".dat") in
-    Printf.fprintf oc "#id\tavg_err\n";
+    (* Printf.fprintf oc "#id\tavg_err\n"; *)
     Grid.iter_box g box (fun n ->
                     let id = Node.id n in
                     let err = avg_error mec id in
@@ -165,9 +165,15 @@ module Make_mechanism (Metric : Metric) : (Exponential with type metric := Metri
                     (* mec.pdfs.(x).(y) <- [];                 (\* TODO!!!!!! *\) *)
                     Printf.fprintf oc "%09i %f\n" id err;
                     l := (id, err)::!l);
+    close_out oc;
+    let max_error = 
+      if max_error = (-1.)
+      then !emax
+      else max_error
+    in
     let nodes_string = List.fold_left (fun tmp (n,v) ->
-        (* let prop = Printf.sprintf "\"pdf\" : %f,\n\"opacity\" : %f," v (v /. !max) in *)
-        let prop = Printf.sprintf "\"err\" : %f,\n\"err_n\" : %f, " v (v /. !emax) in
+        (* let prop = Printf.sprintf "\"pdf\" : %f,\n\"opacity\" : %f," v (v /. max_error) in *)
+        let prop = Printf.sprintf "\"err\" : %f,\n\"err_n\" : %f, " v (v /. max_error) in
         let radius = Grid.radius g in
         let node = Node.geojson_of ~properties:prop radius (Grid.get_id g n) in
         Printf.sprintf "%s%s,\n" tmp node)
@@ -183,7 +189,6 @@ module Make_mechanism (Metric : Metric) : (Exponential with type metric := Metri
        }" cleaned
     in
     Formats.geojson_to_file s (file^".json");
-    close_out oc;
     Util.stat (snd (List.split !l)) (* TODO this could be sumplified with a nice fold in grid *)
     
 
