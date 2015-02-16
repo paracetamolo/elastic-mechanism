@@ -64,25 +64,34 @@ function geoOptions(trackColor) {
             });
         },
         style: function(feature) {
-            var colors = ["#FFFFFF",
-                          "#FFFF00","#FFCC00","#FF9900","#FF6600","#FF3300","#FF0000", 
-                          "#CC0000","#990000","#660000","#330000",
-                          "#000000"];
+            var colors = ["#FFFFFF", //white
+                          "#FFFF00", //yellow
+                          "#FFCC00", //
+                          "#FF9900", //orange
+                          "#FF6600",
+                          "#FF3300", 
+                          "#FF0000", //red
+                          "#CC0000",
+                          "#990000", //darkred
+                          "#660000",
+                          "#330000", //almost black
+                          "#000000"  //black
+                         ];
             var color_id = -1;
             if (feature.properties.pp != null) {
-                color_id = feature.properties.pp * 10;
+                color_id = feature.properties.pp * colors.length;
                 console.log("pp case");
             }
             else if (feature.properties.pdf != null) {
-                color_id = feature.properties.pdf_n * 10;
+                color_id = feature.properties.pdf_n * colors.length;
                 console.log("pdf case");
             }
             else if (feature.properties.err != null) {
-                color_id = feature.properties.err_n * 10;
+                color_id = feature.properties.err_n * colors.length;
                 console.log("err case");
             }
             else {
-                color_id = feature.properties.weight_n * 10;
+                color_id = feature.properties.weight_n * colors.length;
                 console.log("weight case");
             }
             var trackColor = colors[Math.floor(color_id)];
