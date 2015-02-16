@@ -18,7 +18,7 @@ set ylabel font 'Helvetica,28'
 #set ylabel 'Aversarial Error (m)'
 
 # set xr [0:30]
- set yr [0.65:1]
+ set yr [0.6:1]
 
 #req
 set style line 1 lt 1 lc rgb 'black'
@@ -32,7 +32,7 @@ set style fill solid 0.35
 #set style fill pattern
 
 
-set style boxplot nooutliers pointtype 19
+set style boxplot nooutliers pointtype 19 fraction 0.84
 set style data boxplot
 set xtics nomirror
 set ytics nomirror
