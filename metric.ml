@@ -259,18 +259,21 @@ end
     Grid.iter_box m.grid box
               (fun n1 ->
 
-               (* Printf.fprintf oc "%05i: %!" (Node.id n1); (\* TODO to remove *\) *)
                let threshold = Conf.Algo.max_distance *. 2. in (* TODO incrase this 2 *)
                let dists = ball m (Node.id n1) threshold in
-               Grid.iter m.grid (fun n2 -> 
-                                 let id2 = Node.id n2 in
-                                 let d =
-                                   try Hashtbl.find dists id2 with 
-                                     Not_found -> infinity
-                                 in
-                                 Printf.fprintf oc "%+e " d;
-                                );
-               Printf.fprintf oc "\n");
+               (* let _ = Printf.printf "%05i: %i; %!" (Node.id n1) (Hashtbl.length dists) in *)
+               Grid.iter_box m.grid box 
+                             (fun n2 -> 
+                              let id2 = Node.id n2 in
+                              let d =
+                                try Hashtbl.find dists id2 with 
+                                  Not_found -> infinity
+                              in
+                              Printf.fprintf oc "%+e " d;
+                             );
+               Printf.fprintf oc "\n%!";
+               (* Gc.compact (); *)
+              );
     close_out oc
     
   let to_matrix m file = 
