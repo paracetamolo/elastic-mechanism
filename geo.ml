@@ -13,11 +13,11 @@ let deg_of_rad ang = ang *. 180. /. pi
 
 let pj_latlon = Proj4.init_plus "+proj=latlong +ellps=WGS84"
 
-let pj_merc = Proj4.init_plus "+proj=utm +zone=50N" (* for beijing *)
-let srid_merc = 32650              (* beijing *)
+(* let pj_merc = Proj4.init_plus "+proj=utm +zone=50N" (\* for beijing *\) *)
+(* let srid_merc = 32650              (\* beijing *\) *)
 
-(* let pj_merc_init_string = "+proj=utm +zone=31N" (\* for paris *\) *)
-(* let srid_merc = 32631              (\* for paris: WGS 84 / UTM zone 31N : projection in meters with distance in meters *\) *)
+let pj_merc = Proj4.init_plus"+proj=utm +zone=31N" (* for paris *)
+let srid_merc = 32631              (* for paris: WGS 84 / UTM zone 31N : projection in meters with distance in meters *)
 
 
 module rec Wgs : sig
