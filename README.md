@@ -1,3 +1,7 @@
+# [Elastic Mechanism](http://arxiv.org/abs/1503.00756) for Location Privacy
+This code implements and evaluates the elastic mechanism presented in this [paper](http://arxiv.org/abs/1503.00756).
+
+
 # Install Instructions #
 Tested on Debian 8 Jessie.
 
