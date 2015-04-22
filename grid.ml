@@ -131,7 +131,7 @@ module Grid : sig
   val carve: t -> box_in -> t
   val find: t -> Geo.Utm.t -> pos
   val to_geojson : t -> string -> unit
-  val to_geojson_box : t -> box_in -> string -> unit
+  val to_geojson_box : t -> box_in -> ?max_weight:float -> string -> unit
   val to_file_boxes : t -> box_in list -> string -> unit
   val of_file_boxes : t -> string -> box_in list
   val to_file : t -> string -> unit
@@ -874,29 +874,35 @@ side of the grid.
     Util.stat !l
 
 
-  let geojson_box g box =
-    let max_weight = ref (-. 1.) in
-    iter_box g box (fun n -> max_weight := max !max_weight (Node.weight n));
+  let to_geojson_box g box ?(max_weight=(-. 1.)) file =
+    let max_weight = 
+      if max_weight = (-. 1.) 
+      then
+        let tmp = ref (-. 1.) in
+        iter_box g box (fun n -> tmp := max !tmp (Node.weight n));
+        !tmp
+      else max_weight
+    in
     let radius = radius g in
     let string = ref "" in
     iter_box g box
              (fun n ->
-              let w_norm = if !max_weight > 0. then (Node.weight n) /. !max_weight else (Node.weight n) in
+              let w_norm = if max_weight > 0. then (Node.weight n) /. max_weight else (Node.weight n) in
               let w_norm_s = Printf.sprintf "\"weight_n\" : %f," w_norm in
-              string := Printf.sprintf "%s%s,\n" !string (Node.geojson_of ~properties:w_norm_s radius n));
+              let pos = let (i,j) = pos_of_id g (Node.id n) in Printf.sprintf "\"pos\" : [%i,%i]," i j in
+              let prop = w_norm_s^"\n"^pos in
+              string := Printf.sprintf "%s%s,\n" !string (Node.geojson_of ~properties:prop radius n));
     let nodes_string = !string in
     (* remove last ,\n *)
     let cleaned = String.sub nodes_string 0 (String.length nodes_string -2) in
-    Printf.sprintf
+    let s = Printf.sprintf
       "{ \"type\": \"FeatureCollection\",
          \"features\": [\
           %s
           ]
        }" cleaned
-
-
-  let to_geojson_box g box file =
-    Formats.geojson_to_file (geojson_box g box) file
+    in
+    Formats.geojson_to_file s file
 
   let to_geojson g file =
     let l = length g in
