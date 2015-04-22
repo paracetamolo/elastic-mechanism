@@ -82,10 +82,12 @@ let evaluate_predictive pri u n skip_enable directory =
       let sampled_track = track_of_gpx (Xml.parse_file sample_path) in
       let name = Filename.chop_extension sample_path in
       Printf.printf "%s\n" name; flush_all ();
-      (* (try Unix.mkdir ("tmp/"^(Filename.dirname name)) 0o755; with Unix.Unix_error (Unix.EEXIST,_,_) -> ();); *)
+
+      (* Util.mkdir "tmp/"^(Filename.dirname name); *)
       (* let filename = "tmp/"^name^"-sec" in *)
       (* geojson_to_file (filename^".json") (geojson_of_simple_track sampled_track); *)
       (* xml_to_file (filename^".gpx") (gpx_of_track sampled_track); *)
+
 
       let run_mechanism () =
         let obs = mechanism sampled_track in
@@ -326,6 +328,29 @@ let do_on_a_dir func src_dir dst_dir =
   ()
 
 
+(* Converts a directory tree populated with plt files to gpx
+   Typically run on the Data directory of the geolife dataset
+ *)
+let rec gpx_of_plt_dir src_dir dst_dir =
+
+  let src_dir = Util.deslash src_dir in
+  let dst_dir = Util.deslash dst_dir in
+  Util.mkdir dst_dir;
+
+  let filenames = Sys.readdir src_dir in
+
+  Array.iter
+    (fun filename ->
+     let src = (src_dir^"/"^filename) in
+     if Sys.is_directory src
+     then gpx_of_plt_dir src (dst_dir^"/"^filename)
+     else 
+       let dst = dst_dir^"/"^(Filename.chop_extension filename)^".gpx" in
+       Formats.gpx_of_plt src dst
+    )
+    filenames
+
+
 (* check that 90th percentile and worst_noise_polar coincide *)
 let indep () =
   let p1_ll = Wgs.make 48.84437 2.332964 in    (* paris *)
@@ -352,17 +377,25 @@ let _ =
   if (Array.length argv) = 0 then failwith "No arguments";
       
   let command = argv.(1) in
-  let src_dir = argv.(2) in
+  let src_dir = Util.deslash argv.(2) in
 
   match command with
 
-    "filter" -> (
-      let dst_dir = src_dir^"-filtered" in
+  | "geolife2gpx" ->             (* src_dir must be Data directory of geolife *)
+     let dst_dir = Util.deslash argv.(3) in
+     gpx_of_plt_dir src_dir dst_dir
 
-      (* Printf.printf "filter src_dir:%s dst_dir:%s\n" src_dir dst_dir; *)
+  | "tdrive2gpx" ->             (* TODO *)
+     let src_file = argv.(2) in
+     let dst_file = argv.(3) in
+     gpx_of_tdrive src_file dst_file
+  
+  | "filter" -> (
+      let dst_dir = src_dir^"-filtered" in
       do_on_a_dir mega_filter src_dir dst_dir;
       do_on_a_dir mega_stat dst_dir dst_dir;
       ())
+
   | "sample" -> (
     Printf.printf "sample\n";
     let small = float_of_string argv.(3) in
@@ -373,6 +406,7 @@ let _ =
     sample_traces small big accuracy src_dir dst_dir;
     sample_stat dst_dir;
     ())
+
   | "run" -> (
       Printf.printf "run\n";
       let pr = float_of_string argv.(3) in
@@ -383,7 +417,6 @@ let _ =
       evaluate_predictive  pr  u  n  skip  src_dir; 
       ())
   | "gpx2json" ->
-      let src_dir = Util.deslash src_dir in
       let dst_dir = (Util.deslash src_dir)^"-json" in
       let input_filenames = Array.to_list (Sys.readdir src_dir) in
 
@@ -401,9 +434,4 @@ let _ =
         input_filenames
       in
       ()
-  | "tdrive2gpx" ->
-    let src_file = argv.(2) in
-    let dst_file = argv.(3) in
-    gpx_of_tdrive src_file dst_file;
-    ()
   | _ -> failwith "Not a valid command"

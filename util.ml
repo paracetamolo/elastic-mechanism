@@ -225,3 +225,9 @@ let repeat f n =
     else repeat_in f (n-1) ((f ())::tmp)
   in
   List.rev (repeat_in f n [])
+
+(* make directory or do nothing if it already exists *)
+let mkdir dirname = 
+  try 
+    Unix.mkdir dirname 0o755
+  with Unix.Unix_error (Unix.EEXIST,_,_) -> ()

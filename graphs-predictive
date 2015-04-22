@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+REST=$PWD/"predictive.gnuplot"
+
+if [ "$1" == "" ]; then echo "empty dir"; exit -1; fi 
+
+cd $1
+
+for i in $(ls all*.plot); do
+
+    cat $i >> tmp.plot
+    cat $REST >> tmp.plot
+
+    gnuplot tmp.plot
+    rm tmp.plot
+done
+
+for i in $(ls all*.png); do
+    name=$(echo ${i%.png} | tr -d '.')
+
+    mv $i $name.ps
+    ps2pdf -dEPSCrop $name.ps
+    rm $name.ps
+done
