@@ -20,6 +20,17 @@ let pj_merc = Proj4.init_plus"+proj=utm +zone=31N" (* for paris *)
 let srid_merc = 32631              (* for paris: WGS 84 / UTM zone 31N : projection in meters with distance in meters *)
 
 
+(* @param distance to use
+   @pts   list of elements
+   @return distances between the elements of the list
+*)
+let rec intra_distances distance pts = 
+    match pts with
+    | pt1::pt2::[] -> (distance pt1 pt2)::[]
+    | pt1::pt2::rest -> (distance pt1 pt2)::(intra_distances distance (pt2::rest))
+    | _ -> failwith "Not enough elements"
+
+
 module rec Wgs : sig
     type t
     val srid : int
@@ -150,12 +161,6 @@ and Utm : sig
    *)
   let perpendicular_distance (x0,y0) (c0,c1) =
     (abs_float ((c1 *. x0) -. y0 +. c0)) /. (sqrt ((c1 ** 2.) +. 1.))
-
-
-  let project_point_to_line (x0,y0) (c0,c1) = 
-    let x = ((c1 *. y0) +. x0 -. (c1 *. c0)) /. ((c1 ** 2.) +. 1.) in
-    let y = c0 +. (x *. c1) in
-    (x,y)
 
 
   (* planar distance between two points - simple Pythagoras *)

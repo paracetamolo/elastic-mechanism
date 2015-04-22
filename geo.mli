@@ -31,6 +31,8 @@ and Utm : sig
     val string_of : t -> string
 end
 
+val intra_distances : ('a -> 'a -> float) -> 'a list -> float list
+
 type box = Central of Utm.t * float
 
 val paris1 : Wgs.t

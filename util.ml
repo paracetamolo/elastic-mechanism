@@ -211,3 +211,17 @@ let my_float_compare (a:float) (b:float) =
 
 let string_of_values s =
   Printf.sprintf "min %10f  avg %10f  max %10f  perc %10f  sd %10f" s.min s.avg s.max s.perc s.sd
+
+let parmap f l = 
+  (* Parmap.set_default_ncores 1; *)
+  (* Parmap.parmap f (Parmap.L l) *)
+  List.map f l
+
+
+let repeat f n = 
+  let rec repeat_in f n tmp =
+    if n = 0
+    then tmp
+    else repeat_in f (n-1) ((f ())::tmp)
+  in
+  List.rev (repeat_in f n [])

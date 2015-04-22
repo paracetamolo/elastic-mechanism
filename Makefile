@@ -3,7 +3,7 @@
 # GNU General Public License version 3 or later.
 
 NAME:=elastic
-TARGETS:=evaluation.ml
+TARGETS:=evaluation.ml predictive.ml
 SOURCES:=$(wildcard *.ml)
 BIN_NATIVE:=$(patsubst %.ml, %.native, $(TARGETS))
 BIN_DEBUG:=$(patsubst %.ml, %.d.byte, $(TARGETS))
