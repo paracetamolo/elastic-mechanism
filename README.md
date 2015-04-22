@@ -82,7 +82,8 @@ Additionally the geojson files with extension `.json` can be inspected with the 
 Some OCaml documentation can be built with `make doc` and found in `elastic.docdir/index.html`.
 
 
-# Predictive
+# [Predictive Mechanism](http://arxiv.org/abs/1311.4008)
+Install the build dependencies as instructed above, skip the database and the rest.
 Download [Geolife](http://research.microsoft.com/en-us/downloads/b16d359d-d164-469e-9fd4-daa38f2b2e13/)
 
 ```bash
