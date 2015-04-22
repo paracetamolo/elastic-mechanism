@@ -55,7 +55,8 @@ let make_mappa grid =
   then Elastic.of_files name
   else
     let _ = Printf.printf "Normalizing grid:\n%!" in
-    let grid = Grid.normalize grid in
+    let city_center = Grid.get grid (Grid.find grid Conf.Grid.center) in
+    let grid = Grid.normalize grid city_center in
     Printf.printf "%s\n\n%!" (Util.string_of_values (Grid.stat grid));
     (* Grid.to_geojson grid (name^".json"); *)
 
