@@ -3,6 +3,7 @@ true: warn_error_A, strict_sequence
 <geo.*>: package(proj4)
 <laplacian.*> : package(gsl)
 <formats.*> : package(xml-light), package(calendar)
+<traces.*> : package(calendar), package(gsl), package(xml-light)
 <predictive.*> : package(calendar), package(gsl), package(xml-light)
 <query.*> : package(postgresql), thread
 <test_query.*> : package(postgresql), thread, package(proj4)

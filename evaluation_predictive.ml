@@ -12,7 +12,7 @@
    - number of runs of the mechanism is prob_jump_list X number_of_samples X number_of_runs
 
    Additionally set:
-   - rho and eta in the bm_u_fist and bm_n_first, just if you know what you are doing
+   - rho and eta in the bm_fixed_utility and bm_fixed_rate, just if you know what you are doing
    - speed in skip_to_prediction
    - epsilon, radius_safe in evaluation_predictive
 *)
@@ -36,13 +36,13 @@
 open Geo
 open Formats
 open Predictive
-
+open Traces
 
 type result = {
   i : int; 
   obs : (Utm.t * meta) list; 
   sampled : point list; 
-  stat : stat
+  stat : Traces.stat
 }
 
 let evaluate_predictive pri u n skip_enable directory =
@@ -53,11 +53,13 @@ let evaluate_predictive pri u n skip_enable directory =
   let strict = false in             (* only accept traces long enough *)
 
   if (u = 0. && n = 0.) || (u <> 0. && n <> 0.) then failwith "Wrong parameters.";
-  let u_first = if n = 0. then true else false in
+  let fixed_utility = if n = 0. then true else false in
 
   let directory = Util.deslash directory in
 
-  let bm = if u_first then init_bm_u_first epsilon u pri skip_enable else init_bm_n_first epsilon n pri skip_enable in
+  let bm = if fixed_utility 
+           then init_bm_fixed_utility epsilon u pri skip_enable 
+           else init_bm_fixed_rate epsilon n pri skip_enable in
   let mechanism = mechanism bm in
 
   let prob_of_jump_list = List.sort compare (Util.list_dir directory) in
@@ -79,8 +81,8 @@ let evaluate_predictive pri u n skip_enable directory =
 
       let run_mechanism () =
         let obs = mechanism sampled_track in
-        let stat = statistics sampled_track obs in
-        if u_first && strict then
+        let stat = Traces.statistics sampled_track obs in
+        if fixed_utility && strict then
           (let (_,meta) = List.hd obs in
           if meta.et = (-. 1.)
           then Some (obs,stat)
@@ -88,7 +90,7 @@ let evaluate_predictive pri u n skip_enable directory =
         else Some (obs,stat)
       in
       
-      if (not u_first) && (float (List.length sampled_track) < n) && strict
+      if (not fixed_utility) && (float (List.length sampled_track) < n) && strict
       then None
       else(
         let option_obs_stats = Util.repeat (run_mechanism) number_of_runs in
@@ -105,7 +107,7 @@ let evaluate_predictive pri u n skip_enable directory =
           (* let errors = List.flatten (List.map (fun obs -> let (s,o) = chop_bad_part sampled_track obs in compute_errors s o) obss) in *)
 
           (* short version *)
-          let idx = representative_stat stats in
+          let idx = Traces.representative_stat stats in
           let stat = List.nth stats idx in
           let obs = List.nth obss idx in
 
@@ -113,7 +115,7 @@ let evaluate_predictive pri u n skip_enable directory =
           (* geojson_to_file (filename^".json") (geojson_of_rich_track obs); *)
           (* xml_to_file (filename^".gpx") (gpx_of_rich_track obs); *)
 
-          let errors = let (s,o) = chop_bad_part sampled_track obs in compute_errors s o in
+          let errors = let (s,o) = Traces.chop_bad_part sampled_track obs in Traces.compute_errors s o in
           Some (stat,errors)))
     in
 
@@ -126,9 +128,9 @@ let evaluate_predictive pri u n skip_enable directory =
     match stats with
       [] -> None 
     | _ -> 
-      let percentile = compute_percentile 90. (List.flatten errors) in
+      let percentile = Traces.compute_percentile 90. (List.flatten errors) in
       let avg_all = Util.avg (List.flatten errors) in
-      let stat = average_stat stats in
+      let stat = Traces.average_stat stats in
       (* Printf.printf "prior %s      avg_e %f     95 percentile %f     length %f     avg_all %f\n"  *)
         (* prob_of_jump stat.avg_e percentile stat.n avg_all; *)
       Printf.printf "%s " prob_of_jump; flush_all ();
@@ -176,103 +178,9 @@ let evaluate_predictive pri u n skip_enable directory =
 
 
 
-let compute_intra_speeds track = 
-  let rec intra_speeds_in speeds track = 
-      match track with
-        [] -> failwith "Empty argument"
-      | pt::[] -> speeds
-      | pt1::pt2::rest -> 
-  
-        let period_calendar = CalendarLib.Calendar.sub pt1.time pt2.time in
-        let period_sec = CalendarLib.Time.Period.length (CalendarLib.Calendar.Period.safe_to_time period_calendar) in
-        let distance = Utm.distance pt1.coord pt2.coord in
-        let speed = (distance /. 1000.) /. (float period_sec /. 3600.) in (* km/h *)
-        intra_speeds_in (speed::speeds) (pt2::rest)
-  in
-  let res = intra_speeds_in [] track in
-  List.rev res
 
 
 
-(* 
-  Filters tracks based on various properties so to have a clean dataset to perform the evaluation.
- *)
-
-let mega_filter filename_src filename_dst = 
-  let xml = (Xml.parse_file filename_src) in
-  let track = track_of_gpx xml in
-
-  let length_filter track = 
-    let min_length = 20 in                (* paramter number of points*)
-    let length = List.length track in
-    let bool_length = length >= min_length in
-    bool_length
-  in
-
-  let period_filter track =
-    let min_period = 20. in         (* param minutes*)
-    let newest = (List.hd track).time in
-    let oldest = (List.nth track (List.length track -1)).time in
-    
-    let period_calendar = CalendarLib.Calendar.sub newest oldest in
-    let period_sec = CalendarLib.Time.Period.length (CalendarLib.Calendar.Period.safe_to_time period_calendar) in
-    let period = (float period_sec) /. 60. in
-    let bool_period = period >= min_period in
-    bool_period
-  in
-
-  let speed_filter track = 
-    let intra_speeds = compute_intra_speeds track in
-    let query_speed = 15. in            (* param km/h *)
-    let ratio = (float (List.length (List.filter (fun speed -> speed < query_speed) intra_speeds))) /. (float (List.length track -1)) in
-    let bool_speed = ratio >= 0.1 in
-    bool_speed
-  in
-
-  let rec apply_filters track filters =
-    match filters with
-      [] -> true
-    | filter::rest -> 
-      let passed = filter track in
-      if passed then apply_filters track rest
-      else false
-  in
-  let passed = apply_filters track [length_filter;period_filter;speed_filter] in
-
-  (* Printf.printf " %s  length %4.i  Period %4.f  ratio %6.4f  " filename length period ratio; *)
-  if passed 
-  then xml_to_file filename_dst (gpx_of_track track)
-  else ()
-
-
-
-
-(* 
-  Computes some statistics on a track
- *)
-let mega_stat filename _ = 
-  let xml = (Xml.parse_file filename) in
-  let track = track_of_gpx xml in
-
-  let length = List.length track in
-
-  let newest = (List.hd track).time in
-  let oldest = (List.nth track (List.length track -1)).time in
-  
-  let period_calendar = CalendarLib.Calendar.sub newest oldest in
-  let period_sec = CalendarLib.Time.Period.length (CalendarLib.Calendar.Period.safe_to_time period_calendar) in
-  let period = (float period_sec) /. 60. in
-
-  let intra_distances = (intra_distances Utm.distance (List.map (fun pt -> pt.coord) track)) in
-  let distance = List.fold_left (+.) 0. intra_distances in
-  let speed = (distance /. 1000.)  /. (period /. 60.) in (* km/h *)
-
-  let intra_speeds = compute_intra_speeds track in
-  let query_speed = 15. in
-  let ratio = (float (List.length (List.filter (fun speed -> speed < query_speed) intra_speeds))) /. (float (length-1)) in
-  let max_speed = BatList.max intra_speeds in
-  (* List.iter (fun d -> Printf.printf "%f " d) (compute_intra_speeds track); Printf.printf "\n"; *)
-  Printf.printf " %s length %5.i  distance %9.1f  Period %4.f  speed %5.1f  maxspeed %5.1f  ratio %5.1f\n" filename length (distance) period speed max_speed ratio
 
 
 let sample_stat directory = 
@@ -380,8 +288,8 @@ let _ =
   
   | "filter" -> (
       let dst_dir = src_dir^"-filtered" in
-      do_on_a_dir mega_filter src_dir dst_dir;
-      do_on_a_dir mega_stat dst_dir dst_dir;
+      do_on_a_dir Traces.filter src_dir dst_dir;
+      do_on_a_dir Traces.trace_stat dst_dir dst_dir;
       ())
 
   | "sample" -> (
