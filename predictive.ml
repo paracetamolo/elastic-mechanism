@@ -1,3 +1,7 @@
+(* Copyright (C) 2014, Marco Stronati, All Rights Reserved.
+   This file is distributed under the terms of the
+   GNU General Public License version 3 or later. *)
+
 open Batteries
 
 open Geo

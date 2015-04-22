@@ -282,3 +282,67 @@ let track_of_gowalla filename =
 
 
 
+
+
+
+(*
+   GENERATION OF RANDOM TRACKS
+*)
+
+
+
+(*
+  @param start list of point to start from
+  @param direction to take expressed as angle in degrees
+  @param step between each point
+  @param length of the resulting segment
+  @return straight segment added to the start list
+*)
+(* let go start direction step length = *)
+(*   let rec go_in now length tmp = *)
+(*     if length <= 0 then (now::tmp) *)
+(*     else *)
+(*       let next = destination now direction step in *)
+(*       go_in next (length-1) (now::tmp) *)
+(*   in *)
+(*   go_in (List.hd start) length (List.tl start) *)
+
+
+  
+
+
+(* let random_jump variance small big =  *)
+(*   let sigma = 0.2 in *)
+(*   let gauss () = 1. +. (Gsl_cdf.gaussian_Pinv ~p:(Random.float 1.) ~sigma:sigma) in (\* increase sigma for more variance *\) *)
+  
+(*   if variance >= (Random.float 1.) *)
+(*   then big   *. (gauss ()) *)
+(*   else small *. (gauss ()) *)
+
+
+(* (\* Random walk with gaussian distribution for the angle. *\) *)
+(* let random_direction variance =  *)
+(*   let gauss () = 1. +. (Gsl_cdf.gaussian_Pinv ~p:(Random.float 1.) ~sigma:variance) in (\* increase sigma for more variance *\) *)
+  
+(*   float (int_of_float ((gauss ()) *. 360.)) *)
+
+
+(* let make_random_track jump_prob small big length =  *)
+(*   let p1_ll = (48.84437,2.332964) in    (\* paris *\) *)
+(*   let start = xy_of_latlon p1_ll in *)
+
+(*   let t1 = Util.iterate (fun () -> ((random_direction 50.),(random_jump jump_prob small big),1)) length in *)
+
+(*   let track_metaless = List.fold_left (fun tmp (direction, step, length) -> go tmp direction step length) (start::[]) t1 in *)
+  
+(*   let track = BatList.mapi (fun i pt -> {coord = pt; idx=i; time=default_timestamp} ) track_metaless in *)
+
+(*   (\* let filename = Printf.sprintf "tmp/straight-line-%f-%i-%i" jump_prob length (Random.int 999) in *\) *)
+(*   (\* (\\* dump gpx *\\) *\) *)
+(*   (\* xml_to_file (filename^".gpx") (gpx_of_tracks (track::[])); *\) *)
+
+(*   (\* (\\* dump geojson *\\) *\) *)
+(*   (\* geojson_to_file (filename^".json") (geojson_of_simple_track track); *\) *)
+
+(*   (\* List.map (latlon_of_xy) track *\) *)
+(*   track *)

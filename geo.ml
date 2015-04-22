@@ -13,11 +13,11 @@ let deg_of_rad ang = ang *. 180. /. pi
 
 let pj_latlon = Proj4.init_plus "+proj=latlong +ellps=WGS84"
 
-(* let pj_merc = Proj4.init_plus "+proj=utm +zone=50N" (\* for beijing *\) *)
-(* let srid_merc = 32650              (\* beijing *\) *)
+let pj_merc = Proj4.init_plus "+proj=utm +zone=50N" (* for beijing *)
+let srid_merc = 32650              (* beijing *)
 
-let pj_merc = Proj4.init_plus"+proj=utm +zone=31N" (* for paris *)
-let srid_merc = 32631              (* for paris: WGS 84 / UTM zone 31N : projection in meters with distance in meters *)
+(* let pj_merc = Proj4.init_plus"+proj=utm +zone=31N" (\* for paris *\) *)
+(* let srid_merc = 32631              (\* for paris: WGS 84 / UTM zone 31N : projection in meters with distance in meters *\) *)
 
 
 (* @param distance to use
@@ -44,6 +44,7 @@ end
 =
 struct
   (* TODO write everywhere if they take/return degrees/radiants *)
+  (* TODO i could create variants for decimal degrees, radiants *)
 
   type t = float * float
 
@@ -162,6 +163,10 @@ and Utm : sig
   let perpendicular_distance (x0,y0) (c0,c1) =
     (abs_float ((c1 *. x0) -. y0 +. c0)) /. (sqrt ((c1 ** 2.) +. 1.))
 
+  let project_point_to_line (x0,y0) (c0,c1) = 
+    let x = ((c1 *. y0) +. x0 -. (c1 *. c0)) /. ((c1 ** 2.) +. 1.) in
+    let y = c0 +. (x *. c1) in
+    (x,y)
 
   (* planar distance between two points - simple Pythagoras *)
   let distance (x1,y1) (x2,y2) = sqrt ((x2 -. x1) ** 2. +. (y2 -. y1) ** 2.)
