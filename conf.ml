@@ -16,7 +16,7 @@ open Geo
              
 module Grid = struct
   let center = Utm.of_latlon Geo.paris
-  let length = 150
+  let length = 100
   let step = 100.
 
   let r_city    =  300.

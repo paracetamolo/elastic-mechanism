@@ -1,17 +1,18 @@
 # Install Instructions #
-Tested on Debian 7 Wheezy.
+Tested on Debian 8 Jessie.
 
 ## Build dependencies:
 ```bash
-~$ sudo aptitude install libocamlgraph-ocaml-dev libcalendar-ocaml-dev libxml-light-ocaml-dev libpostgresql-ocaml-dev git make libocamlgsl-ocaml-dev ocaml-batteries-included gnuplot
+~$ sudo aptitude install libproj-dev libocamlgraph-ocaml-dev libcalendar-ocaml-dev libxml-light-ocaml-dev libpostgresql-ocaml-dev git make libocamlgsl-ocaml-dev ocaml-batteries-included gnuplot
 ```
 A couple of libraries from sources:
 ```bash
 ~$ git clone https://github.com/hcarty/proj4ml
-~$ make
+~$ cd proj4ml && make
 ~$ sudo make install
 ~$ git clone https://github.com/rdicosmo/parmap/
-~$ make
+~$ cd parmap
+~$ ./configure && make
 ~$ sudo make install
 ```
 
@@ -33,7 +34,7 @@ and in the database:
 ```bash
 ~$ su - postgres
 postgres~$ psql
-ALTER USER Postgres WITH PASSWORD 'postgres'
+ALTER USER Postgres WITH PASSWORD 'postgres';
 CRTL-D
 ```
 
