@@ -80,3 +80,24 @@ Additionally the geojson files with extension `.json` can be inspected with the 
 
 # Documentation
 Some OCaml documentation can be built with `make doc` and found in `elastic.docdir/index.html`.
+
+
+# Predictive
+Download [Geolife](http://research.microsoft.com/en-us/downloads/b16d359d-d164-469e-9fd4-daa38f2b2e13/)
+
+```bash
+~$ make
+~$ mkdir test
+~$ unzip path/to/Geolife\ Trajectories\ 1.3.zip -d test
+  (first try it with just a few users, like 000 and 001)
+~$ ./do-predictive test
+convert geolife .plt files to .gpx
+filter
+sample every 30 minutes
+sample every 60 minutes
+sanitize sample 30m
+sanitize sample 60m
+generate graphs
+```
+
+The generated graphs will be in `test/gpx-filtered-sampled-1-{3.6}0-5-sanitized/*.pdf`.

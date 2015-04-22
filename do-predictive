@@ -5,12 +5,12 @@ set -e # kill script if there is an error
 EXEC="./evaluation_predictive.native"
 GRAPHS=graphs-predictive
 SRC=$1/gpx #take working dir as first argument
-GEOLIFE=geolife-trajectories-1.3
+GEOLIFE="Geolife Trajectories 1.3"
 
 
-echo Convert geolife .plt files to .gpx
+echo convert geolife .plt files to .gpx
 mkdir -p $SRC
-OCAMLRUNPARAM=b $EXEC geolife2gpx $GEOLIFE/Data $SRC-tree
+OCAMLRUNPARAM=b $EXEC geolife2gpx $1/"$GEOLIFE"/Data $SRC-tree
 cp $SRC-tree/*/Trajectory/*.gpx $SRC
 
 echo filter

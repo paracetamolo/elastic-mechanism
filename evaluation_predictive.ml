@@ -5,7 +5,7 @@
    - sample_traces: 
      - set number_of_samples - the number of samples to generate for each track
      - prob_jump_list - the probability of jumping to use to sample the whole set
-   - spot_log: set number_of_runs to number of runs over the same trace that then are averaged.
+   - evaluation_predictive: set number_of_runs to number of runs over the same trace that then are averaged.
 
    note: 
    - number of resulting tracks is prob_jump_list X number_of_samples, 
@@ -14,10 +14,8 @@
    Additionally set:
    - rho and eta in the bm_u_fist and bm_n_first, just if you know what you are doing
    - speed in skip_to_prediction
-   - epsilon, radius_safe in spot_log
+   - epsilon, radius_safe in evaluation_predictive
 *)
-
-(* aptitude install ocaml libocamlgsl-ocaml-dev libxml-light-ocaml-dev ocaml-batteries-included libcalendar-ocaml-dev make emacs tuareg-mode *)
 
 (* compile statically, including gsl library *)
 (* ocamlopt -I +gsl gsl.cmxa geo_stripped.ml -noautolink -cclib '-Wl,-Bstatic -lmlgsl -lgsl -lgslcblas -Wl,-Bdynamic -lz' -verbose *)
@@ -25,12 +23,6 @@
 (* http://stackoverflow.com/questions/2638664/is-there-any-free-ocaml-to-c-translator *)
 (* ocamlc -output-obj -o foo.c foo.ml *)
 (* gcc -L/usr/lib/ocaml foo.c -lcamlrun -lm -lncurses *)
-
-(* ocamlbuild -use-ocamlfind geo.native -- *)
-(* ocamlbuild -use-ocamlfind -tag debug geo.native -- 
-   run with OCAMLRUNPARAM=b to see stack trace of exceptions
-*)
-
 
 (* general: head new stuff, tail old stuff *)
 
@@ -45,10 +37,6 @@ open Geo
 open Formats
 open Predictive
 
-
-(*            *)
-(* playground *)
-(*            *)
 
 type result = {
   i : int; 
@@ -159,7 +147,7 @@ let evaluate_predictive pri u n skip_enable directory =
 
   (* log statistics *)
   let dir = directory^"-sanitized" in                    (* param *)
-  (try Unix.mkdir dir 0o755; with Unix.Unix_error (Unix.EEXIST,_,_) -> (););
+  Util.mkdir dir;
 
   let param_string = (Printf.sprintf "-%.2f-%.0f-%.0f" pri u n)^(if skip_enable then "-skip" else "-noskip") in
 
@@ -314,7 +302,7 @@ let do_on_a_dir func src_dir dst_dir =
 
   let src_dir = Util.deslash src_dir in
   let dst_dir = Util.deslash dst_dir in
-  (try Unix.mkdir dst_dir 0o755; with Unix.Unix_error (Unix.EEXIST,_,_) -> (););
+  Util.mkdir dst_dir;
 
   let _ = Util.parmap
     (fun input_filename -> 
@@ -420,7 +408,7 @@ let _ =
       let dst_dir = (Util.deslash src_dir)^"-json" in
       let input_filenames = Array.to_list (Sys.readdir src_dir) in
 
-      (try Unix.mkdir dst_dir 0o755; with Unix.Unix_error (Unix.EEXIST,_,_) -> (););
+      Util.mkdir dst_dir;
       
       let _ = Util.parmap
         (fun input_filename -> 

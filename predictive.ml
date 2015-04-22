@@ -2,15 +2,20 @@
    This file is distributed under the terms of the
    GNU General Public License version 3 or later. *)
 
-open Batteries
-
 open Geo
-open Laplacian
 open Formats
 
 
 (* 
-   Takes the filename of a trace, creates a directory with a saple of the trace with prob_jump.
+  Pre-processing of the traces: sampling with different frequencies
+*)
+
+
+(* Takes the filename of a trace, creates a directory with a sample of the trace with prob_jump. 
+  @param small_jump  time interval between two queries, default value
+  @param big_jump    time interval between two queries, in case of jump
+  @param accuracy    interval in which a sample is accepted wrt to the expected time
+  @param prob_jump   probability to perform a big_jump 
 *)
 
 let sample small_jump big_jump accuracy prob_jump filename =
@@ -118,7 +123,9 @@ let sample small_jump big_jump accuracy prob_jump filename =
   else None
 
 
-let sample_traces small_jump big_jump accuracy src_dir dst_dir = 
+
+(* sample a directory of traces, creating for each prob of jumping a directory *)
+let sample_traces small_jump big_jump accuracy src_dir dst_dir =
   let number_of_samples = 1 in     (* param *)
   let prob_jump_list = [0.0;0.1;0.2;0.3;0.4;0.5;0.6;0.7;0.8;0.9;1.0] in
 
@@ -127,11 +134,11 @@ let sample_traces small_jump big_jump accuracy src_dir dst_dir =
 
   let src_dir = Util.deslash src_dir in
   let dst_dir = Util.deslash dst_dir in
-  (try Unix.mkdir dst_dir 0o755; with Unix.Unix_error (Unix.EEXIST,_,_) -> (););
+  Util.mkdir dst_dir;
 
   let sample_prior prob_of_jump =
     let dst_dir_prior = Printf.sprintf "%s/%3.1f" dst_dir prob_of_jump in
-    (try Unix.mkdir dst_dir_prior 0o755; with Unix.Unix_error (Unix.EEXIST,_,_) -> (););
+    Util.mkdir dst_dir;
 
     let _ = Util.parmap
       (fun input_trace_name -> 
@@ -149,14 +156,14 @@ let sample_traces small_jump big_jump accuracy src_dir dst_dir =
   in
   let _ = List.iter sample_prior prob_jump_list in
 
-  Printf.printf "Generated max %i samples.\n" (number_of_samples * n_input_traces * (List.length prob_jump_list));
-  ()
+  Printf.printf "Generated max %i samples.\n" (number_of_samples * n_input_traces * (List.length prob_jump_list))
 
 
 
 
 
 
+open Laplacian
 
 (* 
    post-processing
@@ -329,12 +336,12 @@ let representative_stat stats =
 
 
 (* super simple prediction *)
-(* let super_simple_prediction obss = *)
-(*   let (x0,y0) = fst (List.nth obss 0) in *)
-(*   let (x1,y1) = fst (List.nth obss 1) in *)
-(*   let x = x0 +. (x0 -. x1) in *)
-(*   let y = y0 +. (y0 -. y1) in *)
-(*   (x,y) *)
+let super_simple_prediction obss =
+  let (x0,y0) = fst (List.nth obss 0) in
+  let (x1,y1) = fst (List.nth obss 1) in
+  let x = x0 +. (x0 -. x1) in
+  let y = y0 +. (y0 -. y1) in
+  (x,y)
 
 
 (* 
@@ -496,6 +503,13 @@ let prediction = parrot
 
 
 
+
+
+
+(* 
+  Test function for the selection of a prediction
+ *)
+
 (* @param alpha prediction precision 
    @param pred  predicted point
    @param sec   secret point 
@@ -509,21 +523,6 @@ let theta_dp epsilon_theta alpha predicted secret =
   (*   if alpha = 0. then false else  *)
       let noise = noise_linear epsilon_theta in
       if (Utm.distance predicted secret) < (alpha +. noise) then true else false
-
-
-
-(*  
-    MECHANISMS
-*)
-
-let mechanism_independent_noise epsilon secs = 
-  List.map (fun sec -> noise_polar epsilon sec) secs
-
-
-let mechanism_independent_noise_budget budget secs = 
-  let epsilon_step = budget /. float (List.length secs) in
-  mechanism_independent_noise epsilon_step secs
-
 
 
 
@@ -592,7 +591,7 @@ let init_bm_u_first epsilon alpha prediction_rate skip_enable =
       let stat = statistics_run run in
       let epsilon_so_far = stat.e_so_far in
     
-      if (epsilon -. epsilon_so_far < 0.000001)         (* TODO check this precision *)
+      if (epsilon -. epsilon_so_far < 0.000001)
       then ((* Printf.printf "End of budget\n"; *) (-1.,-1.,-1.))
       else if (skip_to_prediction time alpha run) && skip_enable
       then (0.,0.,alpha)
@@ -601,7 +600,7 @@ let init_bm_u_first epsilon alpha prediction_rate skip_enable =
       else (
         (* if not (prediction_rate >= compute_min_pr (epsilon_step)) then Printf.printf "We are not gonna make it...\n"; *)
 
-        (* let prediction_rate = if (stat.n_so_far >= 10) then stat.pr_so_far else prediction_rate in (\* TODO super ccheckkk!!!! *\) *)
+        (* let prediction_rate = if (stat.n_so_far >= 10) then stat.pr_so_far else prediction_rate in (\* TODO check *\) *)
         
         let epsilon_theta = eta *. (c_l /. alpha) *. (1. +. (1. /. rho)) in
         let epsilon_i = c_i /. alpha in
@@ -641,17 +640,25 @@ let init_bm_n_first epsilon n prediction_rate skip_enable =
     else if (skip_to_prediction time (last_alpha *. 0.8 ) run) && skip_enable
     then (0.,0.,last_alpha)
     else if (skip_to_independent run) && skip_enable
-    then (0.,(epsilon /. n),0.)   (* epsilon_{I'} *)
+    then (0.,(epsilon /. n),0.)
     else (
       (* if not (prediction_rate >= compute_min_pr (epsilon_step)) then Printf.printf "We are not gonna make it...\n"; *)
       
-      let prediction_rate = if (n_so_far >= 10.) || (n_so_far >= n /. 4.) then stat.pr_so_far else prediction_rate in (* TODO super ccheckkk!!!! *)
+      let prediction_rate = if (n_so_far >= 10.) || (n_so_far >= n /. 4.) then stat.pr_so_far else prediction_rate in (* TODO check *)
       if n = n_so_far then failwith "bm n_first: you should have stopped before";
 
       let epsilon_i = rate /. ((1. -. prediction_rate) +. (c_l /. c_i) *. eta *. (1. +. (1. /. rho))) in
       let epsilon_theta = (c_l /. c_i) *. eta *. (1. +. (1. /. rho)) *. epsilon_i in
       let threshold = c_l /. (rho *. epsilon_theta) in
       (epsilon_theta, epsilon_i, threshold))
+
+
+
+
+(* 
+  Predictive mechanism
+ *)
+
 
 
 (* @param secs (x,y) the head is newest
@@ -694,3 +701,23 @@ let mechanism budget_manager secs =
   in
   let rsecs = List.rev secs in           (* head is the oldest secret *)
   mechanism_in 0 [] rsecs
+
+
+
+
+
+(*  
+    Indipendent Mechanism
+*)
+
+let mechanism_independent_noise epsilon secs = 
+  List.map (fun sec -> noise_polar epsilon sec) secs
+
+
+let mechanism_independent_noise_budget budget secs = 
+  let epsilon_step = budget /. float (List.length secs) in
+  mechanism_independent_noise epsilon_step secs
+
+
+
+
