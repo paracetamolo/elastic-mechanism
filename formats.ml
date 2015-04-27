@@ -6,7 +6,6 @@
   Parser/Printer for geojson, gpx, plt formats.
  *)
 
-open Batteries
 open Geo
 
 let default_timestamp = CalendarLib.Printer.Calendar.from_fstring "%FT%TZ" "1900-01-01T00:00:00Z"
@@ -51,16 +50,16 @@ let rec track_of_trk node =
   | PCData _ -> failwith "PCData"
   | Element (t,a,c) ->  match t with
     | "trk" 
-    | "trkseg" -> BatList.fold_left (fun list child -> BatList.append (track_of_trk child) list) [] c
+    | "trkseg" -> List.fold_left (fun list child -> List.append (track_of_trk child) list) [] c
     | "trkpt" -> 
-      let latlon = Wgs.make (float_of_string (snd (BatList.nth a 0))) (float_of_string (snd (BatList.nth a 1))) in
+      let latlon = Wgs.make (float_of_string (snd (List.nth a 0))) (float_of_string (snd (List.nth a 1))) in
 
       let time = 
         
-        let elements_time = (BatList.filter (fun ele -> match ele with Element ("time",_,_) -> true | _ -> false) c) in
-        if BatList.length elements_time > 0 
+        let elements_time = (List.filter (fun ele -> match ele with Element ("time",_,_) -> true | _ -> false) c) in
+        if List.length elements_time > 0 
         then
-          let time_string = match (BatList.hd elements_time) with Element ("time",_,[PCData value]) -> value | _ -> failwith "track_of_trk" in
+          let time_string = match (List.hd elements_time) with Element ("time",_,[PCData value]) -> value | _ -> failwith "track_of_trk" in
           CalendarLib.Printer.Calendar.from_fstring "%FT%TZ" time_string 
         else
           CalendarLib.Printer.Calendar.from_fstring "%FT%TZ" "1900-01-01T00:00:00Z"
@@ -76,15 +75,15 @@ let rec track_of_gpx node =
   | Element(t,_,c) ->  
     match t with
     | "gpx" -> 
-      let tracks_metaless = BatList.fold_left 
+      let tracks_metaless = List.fold_left 
         (fun list child -> 
           let res = (track_of_trk child) in 
-          if (BatList.length res) > 1 then res::list else list) 
+          if (List.length res) > 1 then res::list else list) 
         [] c
       in
-      let track_metaless = BatList.flatten tracks_metaless in
-      let l = BatList.length track_metaless in
-      BatList.mapi (fun idx pt -> {coord = (fst pt); idx=l-idx; time=(snd pt)} ) track_metaless
+      let track_metaless = List.flatten tracks_metaless in
+      let l = List.length track_metaless in
+      List.mapi (fun idx pt -> {coord = (fst pt); idx=l-idx; time=(snd pt)} ) track_metaless
     | _ -> []
 
 
@@ -209,9 +208,9 @@ let geojson_to_file geojson name =
 let track_of_plt filename = 
   let track = ref [] in
 
-  let filelines = File.lines_of filename in
-  Enum.drop 6 filelines;
-  Enum.iteri (fun i line ->
+  let filelines = BatFile.lines_of filename in
+  BatEnum.drop 6 filelines;
+  BatEnum.iteri (fun i line ->
     (* Printf.printf "%i %s\n" i line; *)
 
     let pt = Scanf.sscanf line "%f,%f,0,%f,%f,%s@,%s"
@@ -238,9 +237,9 @@ let gpx_of_plt filename_src filename_dst =
 let track_of_tdrive filename = 
   let track = ref [] in
 
-  let filelines = File.lines_of filename in
+  let filelines = BatFile.lines_of filename in
   (* Enum.drop 6 filelines; *)
-  Enum.iteri (fun i line ->
+  BatEnum.iteri (fun i line ->
     (* Printf.printf "%i %s\n" i line; *)
 
     let pt = Scanf.sscanf line "%i,%s %s@,%f,%f"
@@ -265,9 +264,9 @@ let gpx_of_tdrive filename_src filename_dst =
 let track_of_gowalla filename = 
   let track = ref [] in
 
-  let filelines = File.lines_of filename in
+  let filelines = BatFile.lines_of filename in
   let time = CalendarLib.Printer.Calendar.from_fstring "%FT%TZ" "1900-01-01T00:00:00Z" in
-  Enum.iteri (fun _ line ->
+  BatEnum.iteri (fun _ line ->
     (* Printf.printf "%i %s\n" i line; *)
 
     let pt = Scanf.sscanf line "%i, %f, %f"
