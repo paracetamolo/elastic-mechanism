@@ -11,8 +11,10 @@ Tested on Debian 8 Jessie.
 ```
 A couple of libraries from sources:
 ```bash
-~$ git clone https://github.com/hcarty/proj4ml
-~$ cd proj4ml && make
+~$ wget https://github.com/hcarty/proj4ml/archive/v0.9.1.tar.gz
+~$ tar -xf v0.9.1.tar.gz
+~$ cd proj4ml-0.9.1
+~$ ./configure && make
 ~$ sudo make install
 ~$ git clone https://github.com/rdicosmo/parmap/
 ~$ cd parmap
@@ -88,7 +90,7 @@ Some OCaml documentation can be built with `make doc` and found in `elastic.docd
 
 # [Predictive Mechanism](http://arxiv.org/abs/1311.4008)
 Install the build dependencies as instructed above, skip the database and the rest.
-Download [Geolife](http://research.microsoft.com/en-us/downloads/b16d359d-d164-469e-9fd4-daa38f2b2e13/)
+Download [Geolife](http://research.microsoft.com/en-us/downloads/b16d359d-d164-469e-9fd4-daa38f2b2e13/).
 
 ```bash
 ~$ make
