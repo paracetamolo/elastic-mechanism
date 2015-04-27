@@ -7,17 +7,13 @@ Tested on Debian 8 Jessie.
 
 ## Build dependencies:
 ```bash
-~$ sudo aptitude install libproj-dev libocamlgraph-ocaml-dev libcalendar-ocaml-dev libxml-light-ocaml-dev libpostgresql-ocaml-dev git make libocamlgsl-ocaml-dev ocaml-batteries-included gnuplot
+~$ sudo aptitude install libparmap-ocaml-dev libproj-dev libocamlgraph-ocaml-dev libcalendar-ocaml-dev libxml-light-ocaml-dev libpostgresql-ocaml-dev git make libocamlgsl-ocaml-dev ocaml-batteries-included gnuplot
 ```
 A couple of libraries from sources:
 ```bash
 ~$ wget https://github.com/hcarty/proj4ml/archive/v0.9.1.tar.gz
 ~$ tar -xf v0.9.1.tar.gz
 ~$ cd proj4ml-0.9.1
-~$ ./configure && make
-~$ sudo make install
-~$ git clone https://github.com/rdicosmo/parmap/
-~$ cd parmap
 ~$ ./configure && make
 ~$ sudo make install
 ```
