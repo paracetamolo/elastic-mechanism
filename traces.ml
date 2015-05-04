@@ -151,7 +151,7 @@ let sample_traces small_jump big_jump accuracy src_dir dst_dir =
 
   let sample_prior prob_of_jump =
     let dst_dir_prior = Printf.sprintf "%s/%3.1f" dst_dir prob_of_jump in
-    Util.mkdir dst_dir;
+    Util.mkdir dst_dir_prior;
 
     let _ = Util.parmap
       (fun input_trace_name -> 
