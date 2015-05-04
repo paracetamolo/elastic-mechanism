@@ -7,10 +7,10 @@ GRAPHS=graphs-predictive
 SRC=$1/gpx #take working dir as first argument
 GEOLIFE="Geolife Trajectories 1.3"
 
-
+export OCAMLRUNPARAM=b
 echo convert geolife .plt files to .gpx
 mkdir -p $SRC
-OCAMLRUNPARAM=b $EXEC geolife2gpx $1/"$GEOLIFE"/Data $SRC-tree
+$EXEC geolife2gpx $1/"$GEOLIFE"/Data $SRC-tree
 cp $SRC-tree/*/Trajectory/*.gpx $SRC
 
 echo filter
